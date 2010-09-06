@@ -22,16 +22,21 @@ class User < ActiveRecord::Base
 	validates_uniqueness_of :email, :case_sensitive => false
 	
 	# Automatically create the virtual attribute 'password_confirmation'.
-  validates_confirmation_of :password
+	validates_confirmation_of :password
 
-  # Password validations.
-  validates_presence_of :password
-  validates_length_of   :password, :within => 6..40
+	# Password validations.
+	validates_presence_of :password
+	validates_length_of   :password, :within => 6..40
 	
 	before_save :encrypt_password
 	
   def has_password?(submitted_password)
     encrypted_password == encrypt(submitted_password)
+  end
+  
+  def remember_me!
+    self.remember_token = encrypt("#{salt}--#{id}--#{Time.now.utc}")
+    save_without_validation
   end
 	
 	def self.authenticate(email, submitted_password)
@@ -42,9 +47,11 @@ class User < ActiveRecord::Base
 	
   private
 
-		def encrypt_password
-      self.salt = make_salt
-      self.encrypted_password = encrypt(password)
+	def encrypt_password
+	  unless password.nil?
+        self.salt = make_salt
+        self.encrypted_password = encrypt(password)
+      end
     end
 
     def encrypt(string)
